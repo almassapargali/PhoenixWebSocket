@@ -25,6 +25,11 @@ public class Channel {
         return self
     }
     
+    func recieved(message: Message) {
+        bindings.filter { $0.event == message.event }
+            .forEach { $0.callback(message) }
+    }
+    
     struct Binding {
         let event: String
         let callback: Message -> ()
