@@ -23,8 +23,8 @@ public struct Message {
         return try NSJSONSerialization.dataWithJSONObject(dic, options: NSJSONWritingOptions())
     }
     
-    init(_ event: String, topic: String, payload: Payload, ref: String = NSUUID().UUIDString) {
-        (self.topic, self.event, self.payload, self.ref) = (topic, event, payload, ref)
+    init(_ event: String, topic: String, payload: Payload) {
+        (self.topic, self.event, self.payload, self.ref) = (topic, event, payload, NSUUID().UUIDString)
     }
     
     init?(data: NSData) {
@@ -34,5 +34,11 @@ public struct Message {
             payload = json["payload"] as? Payload, ref = json["ref"] as? String
             else { return nil }
         (self.topic, self.event, self.payload, self.ref) = (topic, event, payload, ref)
+    }
+}
+
+extension Message: CustomStringConvertible {
+    public var description: String {
+        return "Message[topic: \(topic), event: \(event), ref: \(ref), payload: \(payload)]"
     }
 }

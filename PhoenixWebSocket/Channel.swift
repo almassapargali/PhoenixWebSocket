@@ -9,9 +9,10 @@
 import Foundation
 
 public class Channel {
-    let topic: String
+    public let topic: String
     
     public var onConnect: (Message -> ())?
+    public var onJoinError: (ErrorType -> ())?
     public var onDisconnect: (ErrorType? -> ())?
     
     private var bindings = [Binding]()
@@ -23,6 +24,15 @@ public class Channel {
     public func on(event: String, callback: Message -> ()) -> Self {
         bindings.append(Binding(event: event, callback: callback))
         return self
+    }
+    
+    // call this when message recieved for this channel
+    func recieved(message: Message) {
+        // just in case, should never happen
+        guard message.topic == topic else { return }
+        
+        bindings.filter { $0.event == message.event }
+            .forEach { $0.callback(message) }
     }
     
     struct Binding {

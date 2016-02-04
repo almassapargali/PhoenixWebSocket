@@ -14,6 +14,15 @@ private func makeError(description: String, code: Int = 0) -> NSError {
         userInfo: [NSLocalizedDescriptionKey: description])
 }
 
+private func resolveUrl(url: NSURL, params: [String: String]?) -> NSURL {
+    guard let components = NSURLComponents(URL: url, resolvingAgainstBaseURL: false),
+        params = params else { return url }
+    
+    let queryItems = params.map { str, val in NSURLQueryItem(name: str, value: val) }
+    components.queryItems = components.queryItems.flatMap { $0 + queryItems } ?? queryItems
+    return components.URL ?? url
+}
+
 public enum MessageResult {
     case Success(Message)
     case Error(ErrorType)
@@ -27,39 +36,49 @@ public final class WebsocketClient {
     private var reconnectTimer: NSTimer?
     private var heartbeatTimer: NSTimer?
     
+    public var enableLogging: Bool = true
+    
+    public var onConnect: (() -> ())?
+    public var onDisconnect: (ErrorType? -> ())?
+    
+    // ref as key, for triggering callback when phx_reply event comes in
     private var sentMessages = [String: MessageCallback]()
     
     private var channels = Set<Channel>()
     
-    // date may become stale on this
+    // data may become stale on this
     private var connectedChannels = Set<Channel>()
     
-    deinit {
-        if socket.isConnected {
-            socket.disconnect()
-        }
-    }
-    
+    /// **Warning:** Please don't forget to disconnect when you're done to prevent memory leak
     public init(url: NSURL, params: [String: String]? = nil, selfSignedSSL: Bool = false) {
-        socket = WebSocket(url: WebsocketClient.resolveUrl(url, params: params))
+        socket = WebSocket(url: resolveUrl(url, params: params))
         socket.selfSignedSSL = selfSignedSSL
+        socket.delegate = self
     }
     
-    @objc public func connect(reconnectOnError: Bool = true, reconnectInterval: NSTimeInterval = 5) {
+    public func connect(reconnectOnError: Bool = true, reconnectInterval: NSTimeInterval = 5) {
         guard !socket.isConnected else { return }
         
         if reconnectOnError {
             reconnectTimer = NSTimer.scheduledTimerWithTimeInterval(reconnectInterval,
-                target: self, selector: "connect", userInfo: nil, repeats: true)
+                target: self, selector: "retry", userInfo: nil, repeats: true)
         }
+        log("Connecting to", socket.currentURL)
         socket.connect()
     }
     
-    /// See Starscream.WebSocket.disconnect() doc
+    @objc func retry() {
+        guard !socket.isConnected else { return }
+        log("Retrying connect to", socket.currentURL)
+        socket.connect()
+    }
+    
+    /// See Starscream.WebSocket.disconnect() for forceTimeout argument's doc
     public func disconnect(forceTimeout: NSTimeInterval? = nil) {
         heartbeatTimer?.invalidate()
         reconnectTimer?.invalidate()
         if socket.isConnected {
+            log("Disconnecting from", socket.currentURL)
             socket.disconnect(forceTimeout: forceTimeout)
         }
     }
@@ -75,28 +94,39 @@ public final class WebsocketClient {
     }
     
     private func sendJoinEvent(channel: Channel) {
+        // if socket isn't connected, we join this channel right after connection
         guard socket.isConnected else { return }
+        
+        log("Joining channel:", channel.topic)
         send(channel, event: Event.Join) { [weak self] result in
             switch result {
             case .Success(let message):
+                self?.log("Joined channel, payload:", message.payload)
                 self?.connectedChannels.insert(channel)
                 channel.onConnect?(message)
             case .Error(let error):
-                print("Couldn't join channel: \(error)")
+                self?.log("Failed to join channel:", error)
+                channel.onJoinError?(error)
             }
         }
     }
     
     public func leave(channel: Channel) {
+        // before guard so it won't be rejoined on next connection
         channels.remove(channel)
+        
+        // we simply won't rejoin after connection
         guard socket.isConnected else { return }
+        
+        log("Leaving channel:", channel.topic)
         send(channel, event: Event.Leave) { [weak self] result in
             switch result {
-            case .Success(_):
+            case .Success(let message):
+                self?.log("Left channel, payload:", message.payload)
                 self?.connectedChannels.remove(channel)
                 channel.onDisconnect?(nil)
-            case .Error(let error):
-                print("Couldn't leave channel: \(error)")
+            case .Error(let error): // how is this possible?
+                self?.log("Failed to leave channel:", error)
             }
         }
     }
@@ -104,30 +134,25 @@ public final class WebsocketClient {
     func send(message: Message, callback: MessageCallback? = nil) {
         guard socket.isConnected else {
             callback?(.Error(makeError("Not connected to the server.")))
+            log("Attempt to send message while not connected:", message)
             return
         }
         do {
             let data = try message.toJson()
+            log("Sending", message)
             sentMessages[message.ref] = callback
             socket.writeData(data)
         } catch {
+            log("Failed to send message:", error)
             callback?(.Error(error))
         }
     }
     
-    @objc func sendHeartbeat() throws {
+    @objc func sendHeartbeat() {
         send(Message(Event.Heartbeat, topic: "phoenix", payload: ["status": "heartbeat"]))
     }
     
-    private class func resolveUrl(url: NSURL, params: [String: String]?) -> NSURL {
-        guard let components = NSURLComponents(URL: url, resolvingAgainstBaseURL: false),
-            params = params else { return url }
-        
-        let queryItems = params.map { str, val in NSURLQueryItem(name: str, value: val) }
-        components.queryItems = components.queryItems.flatMap { $0 + queryItems } ?? queryItems
-        return components.URL ?? url
-    }
-    
+    // Phoenix related events
     struct Event {
         static let Heartbeat = "heartbeat"
         static let Join = "phx_join"
@@ -140,24 +165,44 @@ public final class WebsocketClient {
 
 extension WebsocketClient: WebSocketDelegate {
     public func websocketDidConnect(socket: Starscream.WebSocket) {
+        log("Connected to:", socket.currentURL)
+        onConnect?()
         heartbeatTimer?.invalidate()
-        heartbeatTimer = NSTimer.scheduledTimerWithTimeInterval( 30,
+        heartbeatTimer = NSTimer.scheduledTimerWithTimeInterval(30,
             target: self, selector: "sendHeartbeat", userInfo: nil, repeats: true)
         channels.forEach(sendJoinEvent)
     }
     
     public func websocketDidDisconnect(socket: Starscream.WebSocket, error: NSError?) {
-        print(error)
+        log("Disconnected from:", socket.currentURL, error)
+        // we don't worry about reconnecting, since we've started reconnectTime when connecting
+        onDisconnect?(error)
         heartbeatTimer?.invalidate()
         connectedChannels.forEach { $0.onDisconnect?(error) }
         connectedChannels.removeAll()
+        
+        // I don't think we'll recive their responses
+        sentMessages.removeAll()
     }
     
     public func websocketDidReceiveMessage(socket: Starscream.WebSocket, text: String) {
-        print("Text ", text)
+        log("Received text:", text)
+        if let data = text.dataUsingEncoding(NSUTF8StringEncoding), message = Message(data: data) {
+            if let callback = sentMessages.removeValueForKey(message.ref) {
+                callback(.Success(message))
+            }
+            channels.filter { $0.topic == message.topic }
+                .forEach { $0.recieved(message) }
+        }
     }
     
     public func websocketDidReceiveData(socket: Starscream.WebSocket, data: NSData) {
-        print("Data ", NSString(data: data, encoding: NSUTF8StringEncoding))
+        log("Received data:", data)
+    }
+}
+
+extension WebsocketClient {
+    private func log(items: Any...) {
+        if enableLogging { print(items) }
     }
 }
