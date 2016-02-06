@@ -12,8 +12,8 @@ public class Channel {
     public let topic: String
     
     public var onConnect: (Response -> ())?
-    public var onJoinError: (ErrorType -> ())?
-    public var onDisconnect: (ErrorType? -> ())?
+    public var onJoinError: (SendError -> ())?
+    public var onDisconnect: (NSError? -> ())?
     
     public var joinPayload: Message.JSON?
     

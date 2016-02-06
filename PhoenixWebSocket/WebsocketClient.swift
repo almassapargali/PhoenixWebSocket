@@ -9,13 +9,6 @@
 import Foundation
 import Starscream
 
-let ErrorDomain = "com.almassapargali.PhoenixWebSocket"
-
-func makeError(description: String, domain: String = ErrorDomain, code: Int = 0) -> NSError {
-    return NSError(domain: ErrorDomain, code: code,
-        userInfo: [NSLocalizedDescriptionKey: description])
-}
-
 private func resolveUrl(url: NSURL, params: [String: String]?) -> NSURL {
     guard let components = NSURLComponents(URL: url, resolvingAgainstBaseURL: false),
         params = params else { return url }
@@ -25,12 +18,32 @@ private func resolveUrl(url: NSURL, params: [String: String]?) -> NSURL {
     return components.URL ?? url
 }
 
+public enum SendError: ErrorType {
+    case NotConnected
+    
+    case PayloadSerializationFailed(String)
+    
+    case ResponseDeserializationFailed(ResponseError)
+}
+
+extension SendError: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .NotConnected: return "Socket is not connected to the server."
+        case .PayloadSerializationFailed(let reason):
+            return "Payload serialization failed: \(reason)"
+        case .ResponseDeserializationFailed(let error):
+            return "Response deserialization failed: \(error)"
+        }
+    }
+}
+
 public enum MessageResponse {
     case Success(Response)
     
     /// Note that errors received from server will be in Success case.
-    /// This case for errors related to client side.
-    case Error(ErrorType)
+    /// This case for client side errors.
+    case Error(SendError)
 }
 
 public final class WebsocketClient {
@@ -44,7 +57,7 @@ public final class WebsocketClient {
     public var enableLogging: Bool = true
     
     public var onConnect: (() -> ())?
-    public var onDisconnect: (ErrorType? -> ())?
+    public var onDisconnect: (NSError? -> ())?
     
     // ref as key, for triggering callback when phx_reply event comes in
     private var sentMessages = [String: MessageCallback]()
@@ -139,7 +152,7 @@ public final class WebsocketClient {
     
     func send(message: Message, callback: MessageCallback? = nil) {
         guard socket.isConnected else {
-            callback?(.Error(makeError("Not connected to the server.")))
+            callback?(.Error(.NotConnected))
             log("Attempt to send message while not connected:", message)
             return
         }
@@ -148,9 +161,9 @@ public final class WebsocketClient {
             log("Sending", message)
             sentMessages[message.ref] = callback
             socket.writeData(data)
-        } catch {
+        } catch let error as NSError {
             log("Failed to send message:", error)
-            callback?(.Error(error))
+            callback?(.Error(.PayloadSerializationFailed(error.localizedDescription)))
         }
     }
     
@@ -197,9 +210,10 @@ extension WebsocketClient: WebSocketDelegate {
             if let callback = sentMessages.removeValueForKey(message.ref) {
                 do {
                     callback(.Success(try Response.fromPayload(message.payload)))
+                } catch let error as ResponseError {
+                    callback(.Error(.ResponseDeserializationFailed(error)))
                 } catch {
-                    log("Couldn't get response from message:", error)
-                    callback(.Error(error))
+                    fatalError("Response.fromPayload throw unknown error")
                 }
             }
             channels.filter { $0.topic == message.topic }

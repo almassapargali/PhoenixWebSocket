@@ -8,35 +8,6 @@
 
 import Foundation
 
-public enum Response {
-    case Ok(Message.JSON)
-    case Error(ErrorType)
-    
-    public static func fromPayload(payload: Message.JSON) throws -> Response {
-        guard let status = payload["status"] as? String where ["ok", "error"].contains(status),
-            let response = payload["response"] as? Message.JSON else {
-                throw makeError("Couldn't read response from payload.")
-        }
-        
-        if status == "ok" { return .Ok(response) }
-        
-        // only error statuses pass here
-        if let reason = response["reason"] as? String {
-            return .Error(makeError(reason, domain: "WebsocketServer"))
-        }
-        throw makeError("Couldn't read response from payload.")
-    }
-}
-
-extension Response: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .Ok(let response): return "Response.Ok: \(response)"
-        case .Error(let error): return "Response.Error: \(error)"
-        }
-    }
-}
-
 public struct Message {
     public typealias JSON = [String: AnyObject]
     

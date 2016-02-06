@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B6EE1B5C1C65BCA900B0D6ED /* Response.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6EE1B5B1C65BCA800B0D6ED /* Response.swift */; };
 		B6FA23AD1C63661400AF0893 /* PhoenixWebSocket.h in Headers */ = {isa = PBXBuildFile; fileRef = B6FA23AC1C63661400AF0893 /* PhoenixWebSocket.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B6FA23BC1C63666100AF0893 /* WebsocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6FA23BB1C63666100AF0893 /* WebsocketClient.swift */; };
 		B6FA23BE1C6366E600AF0893 /* Starscream.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B6FA23BD1C6366E600AF0893 /* Starscream.framework */; };
@@ -15,6 +16,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B6EE1B5B1C65BCA800B0D6ED /* Response.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Response.swift; sourceTree = "<group>"; };
 		B6FA23A91C63661400AF0893 /* PhoenixWebSocket.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PhoenixWebSocket.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6FA23AC1C63661400AF0893 /* PhoenixWebSocket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PhoenixWebSocket.h; sourceTree = "<group>"; };
 		B6FA23AE1C63661400AF0893 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -59,6 +61,7 @@
 				B6FA23BB1C63666100AF0893 /* WebsocketClient.swift */,
 				B6FA23C31C63700900AF0893 /* Channel.swift */,
 				B6FA23C11C63689A00AF0893 /* Message.swift */,
+				B6EE1B5B1C65BCA800B0D6ED /* Response.swift */,
 				B6FA23AC1C63661400AF0893 /* PhoenixWebSocket.h */,
 				B6FA23AE1C63661400AF0893 /* Info.plist */,
 			);
@@ -143,6 +146,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B6EE1B5C1C65BCA900B0D6ED /* Response.swift in Sources */,
 				B6FA23BC1C63666100AF0893 /* WebsocketClient.swift in Sources */,
 				B6FA23C41C63700900AF0893 /* Channel.swift in Sources */,
 				B6FA23C21C63689A00AF0893 /* Message.swift in Sources */,
