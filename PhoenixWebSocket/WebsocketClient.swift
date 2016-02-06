@@ -168,7 +168,7 @@ public final class WebsocketClient {
     }
     
     @objc func sendHeartbeat() {
-        send(Message(Event.Heartbeat, topic: "phoenix", payload: ["status": "heartbeat"]))
+        send(Message(Event.Heartbeat, topic: "phoenix", payload: [:]))
     }
     
     // Phoenix related events
