@@ -9,8 +9,10 @@
 import Foundation
 import Starscream
 
-private func makeError(description: String, code: Int = 0) -> NSError {
-    return NSError(domain: "com.almassapargali.PhoenixWebSocket", code: code,
+let ErrorDomain = "com.almassapargali.PhoenixWebSocket"
+
+func makeError(description: String, domain: String = ErrorDomain, code: Int = 0) -> NSError {
+    return NSError(domain: ErrorDomain, code: code,
         userInfo: [NSLocalizedDescriptionKey: description])
 }
 
@@ -23,13 +25,16 @@ private func resolveUrl(url: NSURL, params: [String: String]?) -> NSURL {
     return components.URL ?? url
 }
 
-public enum MessageResult {
-    case Success(Message)
+public enum MessageResponse {
+    case Success(Response)
+    
+    /// Note that errors received from server will be in Success case.
+    /// This case for errors related to client side.
     case Error(ErrorType)
 }
 
 public final class WebsocketClient {
-    public typealias MessageCallback = MessageResult -> ()
+    public typealias MessageCallback = MessageResponse -> ()
     
     private let socket: WebSocket
     
@@ -83,7 +88,7 @@ public final class WebsocketClient {
         }
     }
     
-    public func send(channel: Channel, event: String, payload: Message.Payload = [:], callback: MessageCallback? = nil) {
+    public func send(channel: Channel, event: String, payload: Message.JSON = [:], callback: MessageCallback? = nil) {
         let message = Message(event, topic: channel.topic, payload: payload)
         send(message, callback: callback)
     }
@@ -100,10 +105,10 @@ public final class WebsocketClient {
         log("Joining channel:", channel.topic)
         send(channel, event: Event.Join) { [weak self] result in
             switch result {
-            case .Success(let message):
-                self?.log("Joined channel, payload:", message.payload)
+            case .Success(let response):
+                self?.log("Joined channel, payload:", response)
                 self?.connectedChannels.insert(channel)
-                channel.onConnect?(message)
+                channel.onConnect?(response)
             case .Error(let error):
                 self?.log("Failed to join channel:", error)
                 channel.onJoinError?(error)
@@ -121,8 +126,8 @@ public final class WebsocketClient {
         log("Leaving channel:", channel.topic)
         send(channel, event: Event.Leave) { [weak self] result in
             switch result {
-            case .Success(let message):
-                self?.log("Left channel, payload:", message.payload)
+            case .Success(let response):
+                self?.log("Left channel, payload:", response)
                 self?.connectedChannels.remove(channel)
                 channel.onDisconnect?(nil)
             case .Error(let error): // how is this possible?
@@ -189,10 +194,17 @@ extension WebsocketClient: WebSocketDelegate {
         log("Received text:", text)
         if let data = text.dataUsingEncoding(NSUTF8StringEncoding), message = Message(data: data) {
             if let callback = sentMessages.removeValueForKey(message.ref) {
-                callback(.Success(message))
+                do {
+                    callback(.Success(try Response.fromPayload(message.payload)))
+                } catch {
+                    log("Couldn't get response from message:", error)
+                    callback(.Error(error))
+                }
             }
             channels.filter { $0.topic == message.topic }
                 .forEach { $0.recieved(message) }
+        } else {
+            log("Couldn't parse message from text:", text)
         }
     }
     
