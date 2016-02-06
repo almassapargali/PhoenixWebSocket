@@ -15,6 +15,8 @@ public class Channel {
     public var onJoinError: (ErrorType -> ())?
     public var onDisconnect: (ErrorType? -> ())?
     
+    public var joinPayload: Message.JSON?
+    
     private var bindings = [Binding]()
     
     public init(topic: String) {

@@ -103,7 +103,8 @@ public final class WebsocketClient {
         guard socket.isConnected else { return }
         
         log("Joining channel:", channel.topic)
-        send(channel, event: Event.Join) { [weak self] result in
+        let payload = channel.joinPayload ?? [:]
+        send(channel, event: Event.Join, payload: payload) { [weak self] result in
             switch result {
             case .Success(let response):
                 self?.log("Joined channel, payload:", response)
