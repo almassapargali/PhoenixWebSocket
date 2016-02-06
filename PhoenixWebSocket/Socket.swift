@@ -1,5 +1,5 @@
 //
-//  WebsocketClient.swift
+//  Socket.swift
 //  PhoenixWebSocket
 //
 //  Created by Almas Sapargali on 2/4/16.
@@ -46,7 +46,7 @@ public enum MessageResponse {
     case Error(SendError)
 }
 
-public final class WebsocketClient {
+public final class Socket {
     public typealias MessageCallback = MessageResponse -> ()
     
     private let socket: WebSocket
@@ -185,7 +185,7 @@ public final class WebsocketClient {
     }
 }
 
-extension WebsocketClient: WebSocketDelegate {
+extension Socket: WebSocketDelegate {
     public func websocketDidConnect(socket: Starscream.WebSocket) {
         log("Connected to:", socket.currentURL)
         onConnect?()
@@ -231,7 +231,7 @@ extension WebsocketClient: WebSocketDelegate {
     }
 }
 
-extension WebsocketClient {
+extension Socket {
     private func log(items: Any...) {
         if enableLogging { print(items) }
     }
