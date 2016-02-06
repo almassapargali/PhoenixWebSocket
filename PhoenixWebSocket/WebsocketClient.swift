@@ -159,7 +159,10 @@ public final class WebsocketClient {
         do {
             let data = try message.toJson()
             log("Sending", message)
-            sentMessages[message.ref] = callback
+            // force unwrap because:
+            // 0. if ref is missing, then something is going wrong
+            // 1. this func isn't public
+            sentMessages[message.ref!] = callback
             socket.writeData(data)
         } catch let error as NSError {
             log("Failed to send message:", error)
@@ -207,7 +210,7 @@ extension WebsocketClient: WebSocketDelegate {
     public func websocketDidReceiveMessage(socket: Starscream.WebSocket, text: String) {
         log("Received text:", text)
         if let data = text.dataUsingEncoding(NSUTF8StringEncoding), message = Message(data: data) {
-            if let callback = sentMessages.removeValueForKey(message.ref) {
+            if let ref = message.ref, callback = sentMessages.removeValueForKey(ref) {
                 do {
                     callback(.Success(try Response.fromPayload(message.payload)))
                 } catch let error as ResponseError {

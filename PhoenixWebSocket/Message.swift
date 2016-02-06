@@ -12,14 +12,15 @@ public struct Message {
     public typealias JSON = [String: AnyObject]
     
     public let topic: String
-    
+
     public let event: String
     public let payload: [String: AnyObject]
-    
-    let ref: String
-    
+
+    // broadcasted messages doesn't have ref
+    let ref: String?
+
     func toJson() throws -> NSData {
-        let dic = ["topic": topic, "event": event, "payload": payload, "ref": ref]
+        let dic = ["topic": topic, "event": event, "payload": payload, "ref": ref ?? ""]
         return try NSJSONSerialization.dataWithJSONObject(dic, options: NSJSONWritingOptions())
     }
     
@@ -31,9 +32,10 @@ public struct Message {
         let jsonObject = try? NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions())
         guard let json = jsonObject as? JSON,
             topic = json["topic"] as? String, event = json["event"] as? String,
-            payload = json["payload"] as? JSON, ref = json["ref"] as? String
+            payload = json["payload"] as? JSON
             else { return nil }
-        (self.topic, self.event, self.payload, self.ref) = (topic, event, payload, ref)
+        (self.topic, self.event, self.payload) = (topic, event, payload)
+        ref = json["ref"] as? String
     }
 }
 
