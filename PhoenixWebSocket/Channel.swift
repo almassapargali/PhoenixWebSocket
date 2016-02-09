@@ -11,16 +11,28 @@ import Foundation
 public class Channel {
     public let topic: String
     
-    public var onConnect: (Response -> ())?
-    public var onJoinError: (SendError -> ())?
-    public var onDisconnect: (NSError? -> ())?
+    public internal(set) var status: Status {
+        didSet { onStatus?(status) }
+    }
     
+    private var onStatus: (Status -> ())?
+    
+    /// Payload to send when joining channel.
     public var joinPayload: Message.JSON?
     
     private var bindings = [Binding]()
     
-    public init(topic: String) {
+    public init(topic: String, onStatusChange: (Status -> ())? = nil) {
         self.topic = topic
+        onStatus = onStatusChange
+        status = .Disconnected(nil)
+    }
+    
+    /// This will override any previous `onStatusChange` calls
+    /// or callback given to initializer.
+    public func onStatusChange(callback: Status -> ()) -> Self {
+        onStatus = callback
+        return self
     }
     
     public func on(event: String, callback: Message -> ()) -> Self {
@@ -40,6 +52,30 @@ public class Channel {
     struct Binding {
         let event: String
         let callback: Message -> ()
+    }
+    
+    public enum Status {
+        case Joining
+        
+        /// When channel successfully joined, contains server response.
+        case Joined(Message.JSON)
+        
+        /// When joining rejected by server (i.e. server replied with `{:error, response}`),
+        /// contains error reason and response dic.
+        case Rejected(String, Message.JSON)
+        
+        /// Joining failed by transport related errors.
+        case JoinFailed(SendError)
+        
+        /// Disconnected from server, contains error if any.
+        case Disconnected(NSError?)
+        
+        func isJoined() -> Bool {
+            switch self {
+            case .Joined(_): return true
+            default: return false
+            }
+        }
     }
 }
 

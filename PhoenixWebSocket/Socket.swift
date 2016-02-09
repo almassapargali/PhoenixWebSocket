@@ -24,6 +24,8 @@ public enum SendError: ErrorType {
     case PayloadSerializationFailed(String)
     
     case ResponseDeserializationFailed(ResponseError)
+    
+    case ChannelNotJoined
 }
 
 extension SendError: CustomStringConvertible {
@@ -34,6 +36,7 @@ extension SendError: CustomStringConvertible {
             return "Payload serialization failed: \(reason)"
         case .ResponseDeserializationFailed(let error):
             return "Response deserialization failed: \(error)"
+        case .ChannelNotJoined: return "Channel not joined."
         }
     }
 }
@@ -102,8 +105,12 @@ public final class Socket {
     }
     
     public func send(channel: Channel, event: String, payload: Message.JSON = [:], callback: MessageCallback? = nil) {
-        let message = Message(event, topic: channel.topic, payload: payload)
-        send(message, callback: callback)
+        if channels.contains(channel) && channel.status.isJoined() {
+            let message = Message(event, topic: channel.topic, payload: payload)
+            sendMessage(message, callback: callback)
+        } else {
+            callback?(.Error(.ChannelNotJoined))
+        }
     }
     
     public func join(channel: Channel) {
@@ -117,15 +124,23 @@ public final class Socket {
         
         log("Joining channel:", channel.topic)
         let payload = channel.joinPayload ?? [:]
-        send(channel, event: Event.Join, payload: payload) { [weak self] result in
+        channel.status = .Joining
+        // Use send message to skip channel joined check
+        sendMessage(Message(Event.Join, topic: channel.topic, payload: payload)) { [weak self] result in
             switch result {
-            case .Success(let response):
-                self?.log("Joined channel, payload:", response)
-                self?.connectedChannels.insert(channel)
-                channel.onConnect?(response)
+            case .Success(let joinResponse):
+                switch joinResponse {
+                case .Ok(let response):
+                    self?.log("Joined channel, payload:", response)
+                    self?.connectedChannels.insert(channel)
+                    channel.status = .Joined(response)
+                case let .Error(reason, response):
+                    self?.log("Rejected from channel, payload:", response)
+                    channel.status = .Rejected(reason, response)
+                }
             case .Error(let error):
                 self?.log("Failed to join channel:", error)
-                channel.onJoinError?(error)
+                channel.status = .JoinFailed(error)
             }
         }
     }
@@ -138,19 +153,19 @@ public final class Socket {
         guard socket.isConnected else { return }
         
         log("Leaving channel:", channel.topic)
-        send(channel, event: Event.Leave) { [weak self] result in
+        sendMessage(Message(Event.Leave, topic: channel.topic, payload: [:])) { [weak self] result in
             switch result {
             case .Success(let response):
                 self?.log("Left channel, payload:", response)
                 self?.connectedChannels.remove(channel)
-                channel.onDisconnect?(nil)
+                channel.status = .Disconnected(nil)
             case .Error(let error): // how is this possible?
                 self?.log("Failed to leave channel:", error)
             }
         }
     }
     
-    func send(message: Message, callback: MessageCallback? = nil) {
+    func sendMessage(message: Message, callback: MessageCallback? = nil) {
         guard socket.isConnected else {
             callback?(.Error(.NotConnected))
             log("Attempt to send message while not connected:", message)
@@ -171,7 +186,7 @@ public final class Socket {
     }
     
     @objc func sendHeartbeat() {
-        send(Message(Event.Heartbeat, topic: "phoenix", payload: [:]))
+        sendMessage(Message(Event.Heartbeat, topic: "phoenix", payload: [:]))
     }
     
     // Phoenix related events
@@ -200,7 +215,12 @@ extension Socket: WebSocketDelegate {
         // we don't worry about reconnecting, since we've started reconnectTime when connecting
         onDisconnect?(error)
         heartbeatTimer?.invalidate()
-        connectedChannels.forEach { $0.onDisconnect?(error) }
+        channels.forEach { channel in
+            switch channel.status {
+            case .Joined(_), .Joining: channel.status = .Disconnected(error)
+            default: break
+            }
+        }
         connectedChannels.removeAll()
         
         // I don't think we'll recive their responses
