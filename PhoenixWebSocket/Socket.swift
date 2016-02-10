@@ -9,12 +9,24 @@
 import Foundation
 import Starscream
 
+// http://stackoverflow.com/a/24888789/1935440
+// String's stringByAddingPercentEncodingWithAllowedCharacters doesn't encode + sign,
+// which is ofter used in Phoenix tokens.
+private let URLEncodingAllowedChars = NSCharacterSet(charactersInString: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~/?")
+
+private func encodePair(pair: (String, String)) -> String? {
+    if let key = pair.0.stringByAddingPercentEncodingWithAllowedCharacters(URLEncodingAllowedChars),
+        value = pair.1.stringByAddingPercentEncodingWithAllowedCharacters(URLEncodingAllowedChars)
+    { return "\(key)=\(value)" } else { return nil }
+}
+
+
 private func resolveUrl(url: NSURL, params: [String: String]?) -> NSURL {
     guard let components = NSURLComponents(URL: url, resolvingAgainstBaseURL: false),
         params = params else { return url }
     
-    let queryItems = params.map { str, val in NSURLQueryItem(name: str, value: val) }
-    components.queryItems = components.queryItems.flatMap { $0 + queryItems } ?? queryItems
+    let queryString = params.flatMap(encodePair).joinWithSeparator("&")
+    components.percentEncodedQuery = queryString
     return components.URL ?? url
 }
 
