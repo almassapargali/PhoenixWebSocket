@@ -101,6 +101,7 @@ public final class Socket {
                 target: self, selector: "sendHeartbeat", userInfo: nil, repeats: true)
         } else {
             log("Connecting to", socket.currentURL)
+            channels.forEach { $0.status = .Joining }
             socket.connect()
         }
     }
@@ -108,6 +109,7 @@ public final class Socket {
     @objc func retry() {
         guard !socket.isConnected else { return }
         log("Retrying connect to", socket.currentURL)
+        channels.forEach { $0.status = .Joining }
         socket.connect()
     }
     
@@ -132,7 +134,10 @@ public final class Socket {
     
     public func join(channel: Channel) {
         channels.insert(channel)
-        sendJoinEvent(channel)
+        if socket.isConnected { // check for setting status here.
+            channel.status = .Joining
+            sendJoinEvent(channel)
+        }
     }
     
     private func sendJoinEvent(channel: Channel) {
@@ -141,7 +146,6 @@ public final class Socket {
         
         log("Joining channel:", channel.topic)
         let payload = channel.joinPayload ?? [:]
-        channel.status = .Joining
         // Use send message to skip channel joined check
         sendMessage(Message(Event.Join, topic: channel.topic, payload: payload)) { [weak self] result in
             switch result {
@@ -224,6 +228,7 @@ extension Socket: WebSocketDelegate {
         heartbeatTimer?.invalidate()
         heartbeatTimer = NSTimer.scheduledTimerWithTimeInterval(30,
             target: self, selector: "sendHeartbeat", userInfo: nil, repeats: true)
+        // statuses set when we were connecting socket
         channels.forEach(sendJoinEvent)
     }
     
