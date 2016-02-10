@@ -77,15 +77,32 @@ public final class Socket {
         socket.delegate = self
     }
     
+    /// Connects socket to server, if socket is already connected to server, makes sure 
+    /// all timers are in place. This may be usefull to ensure connection when app comes 
+    /// from background, since all timers invalidated when app goes background.
     public func connect(reconnectOnError: Bool = true, reconnectInterval: NSTimeInterval = 5) {
-        guard !socket.isConnected else { return }
+        // if everything is on place
+        if let heartbeatTimer = heartbeatTimer
+            where socket.isConnected && heartbeatTimer.valid { return }
         
         if reconnectOnError {
+            // let's invalidate old timer if any
+            reconnectTimer?.invalidate()
             reconnectTimer = NSTimer.scheduledTimerWithTimeInterval(reconnectInterval,
                 target: self, selector: "retry", userInfo: nil, repeats: true)
         }
-        log("Connecting to", socket.currentURL)
-        socket.connect()
+        
+        if socket.isConnected { // just restart heartbeat timer
+            // send one now attempting to not to timeout on server
+            sendHeartbeat()
+            // setup new timer
+            heartbeatTimer?.invalidate()
+            heartbeatTimer = NSTimer.scheduledTimerWithTimeInterval(30,
+                target: self, selector: "sendHeartbeat", userInfo: nil, repeats: true)
+        } else {
+            log("Connecting to", socket.currentURL)
+            socket.connect()
+        }
     }
     
     @objc func retry() {
