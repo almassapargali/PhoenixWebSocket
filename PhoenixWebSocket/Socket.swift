@@ -64,6 +64,8 @@ public enum MessageResponse {
 public final class Socket {
     public typealias MessageCallback = MessageResponse -> ()
     
+    private static let HearbeatRefPrefix = "heartbeat-"
+    
     private let socket: WebSocket
     
     private var reconnectTimer: NSTimer?
@@ -220,7 +222,9 @@ public final class Socket {
     
     @objc func sendHeartbeat() {
         guard socket.isConnected else { return }
-        sendMessage(Message(Event.Heartbeat, topic: "phoenix", payload: [:]))
+        // so we can skip logging them, less noisy
+        let ref = Socket.HearbeatRefPrefix + NSUUID().UUIDString
+        sendMessage(Message(Event.Heartbeat, topic: "phoenix", payload: [:], ref: ref))
     }
     
     // Phoenix related events
@@ -263,22 +267,25 @@ extension Socket: WebSocketDelegate {
     }
     
     public func websocketDidReceiveMessage(socket: Starscream.WebSocket, text: String) {
-        log("Received text:", text)
-        if let data = text.dataUsingEncoding(NSUTF8StringEncoding), message = Message(data: data) {
-            if let ref = message.ref, callback = sentMessages.removeValueForKey(ref) {
-                do {
-                    callback(.Success(try Response.fromPayload(message.payload)))
-                } catch let error as ResponseError {
-                    callback(.Error(.ResponseDeserializationFailed(error)))
-                } catch {
-                    fatalError("Response.fromPayload throw unknown error")
-                }
+        guard let data = text.dataUsingEncoding(NSUTF8StringEncoding), message = Message(data: data)
+            else { log("Couldn't parse message from text:", text); return }
+        
+        // don't log if hearbeat reply
+        if let ref = message.ref where ref.hasPrefix(Socket.HearbeatRefPrefix) { }
+        else { log("Received:", message) }
+        
+        // Replied message
+        if let ref = message.ref, callback = sentMessages.removeValueForKey(ref) {
+            do {
+                callback(.Success(try Response.fromPayload(message.payload)))
+            } catch let error as ResponseError {
+                callback(.Error(.ResponseDeserializationFailed(error)))
+            } catch {
+                fatalError("Response.fromPayload throw unknown error")
             }
-            channels.filter { $0.topic == message.topic }
-                .forEach { $0.recieved(message) }
-        } else {
-            log("Couldn't parse message from text:", text)
         }
+        channels.filter { $0.topic == message.topic }
+            .forEach { $0.recieved(message) }
     }
     
     public func websocketDidReceiveData(socket: Starscream.WebSocket, data: NSData) {
