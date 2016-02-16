@@ -136,12 +136,17 @@ public final class Socket {
     }
     
     public func send(channel: Channel, event: String, payload: Message.JSON = [:], callback: MessageCallback? = nil) {
-        if channels.contains(channel) && channel.status.isJoined() {
-            let message = Message(event, topic: channel.topic, payload: payload)
-            sendMessage(message, callback: callback)
-        } else {
-            callback?(.Error(.ChannelNotJoined))
+        guard socket.isConnected else {
+            callback?(.Error(.NotConnected))
+            log("Attempt to send message while not connected:", event, payload)
+            return
         }
+        guard channels.contains(channel) && channel.status.isJoined() else {
+            callback?(.Error(.ChannelNotJoined))
+            log("Attempt to send message to not joined channel:", channel.topic, event, payload)
+            return
+        }
+        sendMessage(Message(event, topic: channel.topic, payload: payload), callback: callback)
     }
     
     public func join(channel: Channel) {
@@ -199,11 +204,6 @@ public final class Socket {
     }
     
     func sendMessage(message: Message, callback: MessageCallback? = nil) {
-        guard socket.isConnected else {
-            callback?(.Error(.NotConnected))
-            log("Attempt to send message while not connected:", message)
-            return
-        }
         do {
             let data = try message.toJson()
             log("Sending", message)
@@ -219,6 +219,7 @@ public final class Socket {
     }
     
     @objc func sendHeartbeat() {
+        guard socket.isConnected else { return }
         sendMessage(Message(Event.Heartbeat, topic: "phoenix", payload: [:]))
     }
     
