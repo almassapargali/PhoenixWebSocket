@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B614B7AF1C9C229C00969F61 /* Starscream.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B614B7A41C9C229400969F61 /* Starscream.framework */; };
 		B66CC5D11C9C090C0098109F /* JSQSystemSoundPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B66CC5CC1C9C09020098109F /* JSQSystemSoundPlayer.framework */; };
+		B66CC5D51C9C1A600098109F /* ChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B66CC5D41C9C1A600098109F /* ChatViewController.swift */; };
 		B6D5DEAE1C9C003F00460070 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D5DEAD1C9C003F00460070 /* AppDelegate.swift */; };
 		B6D5DEB01C9C003F00460070 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D5DEAF1C9C003F00460070 /* ViewController.swift */; };
 		B6D5DEB31C9C003F00460070 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B6D5DEB11C9C003F00460070 /* Main.storyboard */; };
@@ -61,6 +63,48 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		B614B7A31C9C229400969F61 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B614B79A1C9C229400969F61 /* Starscream.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 6B3E79E619D48B7F006071F7;
+			remoteInfo = Starscream;
+		};
+		B614B7A51C9C229400969F61 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B614B79A1C9C229400969F61 /* Starscream.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 6B3E79F119D48B7F006071F7;
+			remoteInfo = StarscreamTests;
+		};
+		B614B7A71C9C229400969F61 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B614B79A1C9C229400969F61 /* Starscream.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D9C3E35F19E48FF1009FC285;
+			remoteInfo = StarscreamOSX;
+		};
+		B614B7A91C9C229400969F61 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B614B79A1C9C229400969F61 /* Starscream.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D9C3E36919E48FF1009FC285;
+			remoteInfo = StarscreamOSXTests;
+		};
+		B614B7AB1C9C229400969F61 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B614B79A1C9C229400969F61 /* Starscream.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 091277971BD673A70003036D;
+			remoteInfo = StarscreamTv;
+		};
+		B614B7AD1C9C229400969F61 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B614B79A1C9C229400969F61 /* Starscream.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 091277A01BD673A70003036D;
+			remoteInfo = StarscreamTvTests;
+		};
 		B66CC5CB1C9C09020098109F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = B66CC5C51C9C09020098109F /* JSQSystemSoundPlayer.xcodeproj */;
@@ -92,7 +136,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		B614B79A1C9C229400969F61 /* Starscream.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Starscream.xcodeproj; path = ../Carthage/Checkouts/Starscream/Starscream.xcodeproj; sourceTree = "<group>"; };
 		B66CC5C51C9C09020098109F /* JSQSystemSoundPlayer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = JSQSystemSoundPlayer.xcodeproj; path = JSQSystemSoundPlayer/JSQSystemSoundPlayer/JSQSystemSoundPlayer.xcodeproj; sourceTree = "<group>"; };
+		B66CC5D41C9C1A600098109F /* ChatViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ChatViewController.swift; sourceTree = "<group>"; };
+		B66CC5DA1C9C1AFD0098109F /* PhoenixChatDemo-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "PhoenixChatDemo-Bridging-Header.h"; sourceTree = "<group>"; };
 		B6D5DEAA1C9C003F00460070 /* PhoenixChatDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhoenixChatDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6D5DEAD1C9C003F00460070 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B6D5DEAF1C9C003F00460070 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -197,6 +244,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B614B7AF1C9C229C00969F61 /* Starscream.framework in Frameworks */,
 				B66CC5D11C9C090C0098109F /* JSQSystemSoundPlayer.framework in Frameworks */,
 				B6D5DECE1C9C01FF00460070 /* PhoenixWebSocket.framework in Frameworks */,
 			);
@@ -205,6 +253,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		B614B79B1C9C229400969F61 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B614B7A41C9C229400969F61 /* Starscream.framework */,
+				B614B7A61C9C229400969F61 /* StarscreamTests.xctest */,
+				B614B7A81C9C229400969F61 /* Starscream.framework */,
+				B614B7AA1C9C229400969F61 /* StarscreamOSXTests.xctest */,
+				B614B7AC1C9C229400969F61 /* Starscream.framework */,
+				B614B7AE1C9C229400969F61 /* StarscreamTvTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		B66CC5C61C9C09020098109F /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -218,6 +279,7 @@
 		B6D5DEA11C9C003E00460070 = {
 			isa = PBXGroup;
 			children = (
+				B614B79A1C9C229400969F61 /* Starscream.xcodeproj */,
 				B66CC5C51C9C09020098109F /* JSQSystemSoundPlayer.xcodeproj */,
 				B6D5DEBF1C9C00D800460070 /* PhoenixWebSocket.xcodeproj */,
 				B6D5DEAC1C9C003F00460070 /* PhoenixChatDemo */,
@@ -239,10 +301,12 @@
 				B6D5DEDA1C9C029A00460070 /* JSQMessagesViewController */,
 				B6D5DEAD1C9C003F00460070 /* AppDelegate.swift */,
 				B6D5DEAF1C9C003F00460070 /* ViewController.swift */,
+				B66CC5D41C9C1A600098109F /* ChatViewController.swift */,
 				B6D5DEB11C9C003F00460070 /* Main.storyboard */,
 				B6D5DEB41C9C003F00460070 /* Assets.xcassets */,
 				B6D5DEB61C9C003F00460070 /* LaunchScreen.storyboard */,
 				B6D5DEB91C9C003F00460070 /* Info.plist */,
+				B66CC5DA1C9C1AFD0098109F /* PhoenixChatDemo-Bridging-Header.h */,
 			);
 			path = PhoenixChatDemo;
 			sourceTree = "<group>";
@@ -463,6 +527,10 @@
 					ProductGroup = B6D5DEC01C9C00D800460070 /* Products */;
 					ProjectRef = B6D5DEBF1C9C00D800460070 /* PhoenixWebSocket.xcodeproj */;
 				},
+				{
+					ProductGroup = B614B79B1C9C229400969F61 /* Products */;
+					ProjectRef = B614B79A1C9C229400969F61 /* Starscream.xcodeproj */;
+				},
 			);
 			projectRoot = "";
 			targets = (
@@ -472,6 +540,48 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		B614B7A41C9C229400969F61 /* Starscream.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Starscream.framework;
+			remoteRef = B614B7A31C9C229400969F61 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		B614B7A61C9C229400969F61 /* StarscreamTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = StarscreamTests.xctest;
+			remoteRef = B614B7A51C9C229400969F61 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		B614B7A81C9C229400969F61 /* Starscream.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Starscream.framework;
+			remoteRef = B614B7A71C9C229400969F61 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		B614B7AA1C9C229400969F61 /* StarscreamOSXTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = StarscreamOSXTests.xctest;
+			remoteRef = B614B7A91C9C229400969F61 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		B614B7AC1C9C229400969F61 /* Starscream.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Starscream.framework;
+			remoteRef = B614B7AB1C9C229400969F61 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		B614B7AE1C9C229400969F61 /* StarscreamTvTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = StarscreamTvTests.xctest;
+			remoteRef = B614B7AD1C9C229400969F61 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		B66CC5CC1C9C09020098109F /* JSQSystemSoundPlayer.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
@@ -545,6 +655,7 @@
 				B6D5DF431C9C029A00460070 /* JSQMessagesKeyboardController.m in Sources */,
 				B6D5DF601C9C029A00460070 /* JSQMessagesLoadEarlierHeaderView.m in Sources */,
 				B6D5DF631C9C029A00460070 /* JSQMessagesToolbarContentView.m in Sources */,
+				B66CC5D51C9C1A600098109F /* ChatViewController.swift in Sources */,
 				B6D5DF511C9C029A00460070 /* JSQMessage.m in Sources */,
 				B6D5DF561C9C029A00460070 /* JSQMessagesCellTextView.m in Sources */,
 				B6D5DF401C9C029A00460070 /* UIDevice+JSQMessages.m in Sources */,
@@ -682,6 +793,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.almassapargali.PhoenixChatDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "PhoenixChatDemo/PhoenixChatDemo-Bridging-Header.h";
 			};
 			name = Debug;
 		};
@@ -693,6 +805,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.almassapargali.PhoenixChatDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "PhoenixChatDemo/PhoenixChatDemo-Bridging-Header.h";
 			};
 			name = Release;
 		};

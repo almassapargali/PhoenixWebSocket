@@ -9,17 +9,20 @@
 import UIKit
 
 class ViewController: UIViewController {
+    @IBOutlet weak var usernameField: UITextField!
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+    @IBAction func goToChat(sender: AnyObject) {
+        guard let username = usernameField.text where !username.isEmpty else {
+            let alert = UIAlertController(title: nil, message: "Please enter username",
+                preferredStyle: .Alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .Cancel, handler: nil))
+            presentViewController(alert, animated: true, completion: nil)
+            return
+        }
+        
+        let chat = ChatViewController(username: username)
+        let navigation = UINavigationController(rootViewController: chat)
+        presentViewController(navigation, animated: true, completion: nil)
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-
-
 }
 
