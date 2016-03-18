@@ -1,3 +1,9 @@
 [submodule "Carthage/Checkouts/Starscream"]
 	path = Carthage/Checkouts/Starscream
 	url = https://github.com/daltoniam/Starscream.git
+[submodule "PhoenixChatDemo/JSQMessagesViewController"]
+	path = PhoenixChatDemo/JSQMessagesViewController
+	url = https://github.com/jessesquires/JSQMessagesViewController.git
+[submodule "PhoenixChatDemo/JSQSystemSoundPlayer"]
+	path = PhoenixChatDemo/JSQSystemSoundPlayer
+	url = https://github.com/jessesquires/JSQSystemSoundPlayer.git
