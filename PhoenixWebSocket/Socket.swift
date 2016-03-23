@@ -103,7 +103,7 @@ public final class Socket {
             // let's invalidate old timer if any
             reconnectTimer?.invalidate()
             reconnectTimer = NSTimer.scheduledTimerWithTimeInterval(reconnectInterval,
-                target: self, selector: "retry", userInfo: nil, repeats: true)
+                target: self, selector: #selector(Socket.retry), userInfo: nil, repeats: true)
         }
         
         if socket.isConnected { // just restart heartbeat timer
@@ -112,7 +112,7 @@ public final class Socket {
             // setup new timer
             heartbeatTimer?.invalidate()
             heartbeatTimer = NSTimer.scheduledTimerWithTimeInterval(30,
-                target: self, selector: "sendHeartbeat", userInfo: nil, repeats: true)
+                target: self, selector: #selector(Socket.sendHeartbeat), userInfo: nil, repeats: true)
         } else {
             log("Connecting to", socket.currentURL)
             channels.forEach { $0.status = .Joining }
@@ -244,7 +244,7 @@ extension Socket: WebSocketDelegate {
         onConnect?()
         heartbeatTimer?.invalidate()
         heartbeatTimer = NSTimer.scheduledTimerWithTimeInterval(30,
-            target: self, selector: "sendHeartbeat", userInfo: nil, repeats: true)
+            target: self, selector: #selector(Socket.sendHeartbeat), userInfo: nil, repeats: true)
         // statuses set when we were connecting socket
         channels.forEach(sendJoinEvent)
     }
