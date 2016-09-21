@@ -11,18 +11,18 @@ import UIKit
 class ViewController: UIViewController {
     @IBOutlet weak var usernameField: UITextField!
 
-    @IBAction func goToChat(sender: AnyObject) {
-        guard let username = usernameField.text where !username.isEmpty else {
+    @IBAction func goToChat(_ sender: AnyObject) {
+        guard let username = usernameField.text , !username.isEmpty else {
             let alert = UIAlertController(title: nil, message: "Please enter username",
-                preferredStyle: .Alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .Cancel, handler: nil))
-            presentViewController(alert, animated: true, completion: nil)
+                preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+            present(alert, animated: true, completion: nil)
             return
         }
         
         let chat = ChatViewController(username: username)
         let navigation = UINavigationController(rootViewController: chat)
-        presentViewController(navigation, animated: true, completion: nil)
+        present(navigation, animated: true, completion: nil)
     }
 }
 

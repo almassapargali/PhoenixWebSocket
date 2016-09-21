@@ -20,7 +20,6 @@ private func encodePair(_ pair: (String, String)) -> String? {
     { return "\(key)=\(value)" } else { return nil }
 }
 
-
 private func resolveUrl(_ url: URL, params: [String: String]?) -> URL {
     guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
         let params = params else { return url }

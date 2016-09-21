@@ -30,11 +30,13 @@ public class Channel {
     
     /// This will override any previous `onStatusChange` calls
     /// or callback given to initializer.
+    @discardableResult
     public func onStatusChange(_ callback: @escaping (Status) -> ()) -> Self {
         onStatus = callback
         return self
     }
-    
+
+    @discardableResult
     public func on(_ event: String, callback: @escaping (Message) -> ()) -> Self {
         bindings.append(Binding(event: event, callback: callback))
         return self
@@ -79,11 +81,10 @@ public class Channel {
     }
 }
 
-extension Channel: Equatable { }
-
-
-public func ==(lhs: Channel, rhs: Channel) -> Bool {
-    return lhs.topic == rhs.topic
+extension Channel: Equatable {
+    public static func ==(lhs: Channel, rhs: Channel) -> Bool {
+        return lhs.topic == rhs.topic
+    }
 }
 
 extension Channel: Hashable {

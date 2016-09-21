@@ -10,15 +10,15 @@ import Foundation
 import PhoenixWebSocket
 
 class ChatViewController: JSQMessagesViewController {
-    private let bubbleFactory = JSQMessagesBubbleImageFactory()
+    fileprivate let bubbleFactory = JSQMessagesBubbleImageFactory()!
     
-    private let outgoingBubble: JSQMessagesBubbleImage
-    private let incomingBubble: JSQMessagesBubbleImage
+    fileprivate let outgoingBubble: JSQMessagesBubbleImage
+    fileprivate let incomingBubble: JSQMessagesBubbleImage
     
     let username: String
     
-    private let socket: Socket
-    private let channel: Channel
+    fileprivate let socket: Socket
+    fileprivate let channel: Channel
     
     var subscription: AnyObject?
     
@@ -26,7 +26,7 @@ class ChatViewController: JSQMessagesViewController {
     
     deinit {
         if let observer = subscription {
-            NSNotificationCenter.defaultCenter().removeObserver(observer)
+            NotificationCenter.default.removeObserver(observer)
         }
         socket.disconnect(0)
     }
@@ -34,16 +34,16 @@ class ChatViewController: JSQMessagesViewController {
     init(username: String) {
         self.username = username
         
-        outgoingBubble = bubbleFactory.outgoingMessagesBubbleImageWithColor(.jsq_messageBubbleGreenColor())
-        incomingBubble = bubbleFactory.incomingMessagesBubbleImageWithColor(.jsq_messageBubbleLightGrayColor())
+        outgoingBubble = bubbleFactory.outgoingMessagesBubbleImage(with: .jsq_messageBubbleGreen())
+        incomingBubble = bubbleFactory.incomingMessagesBubbleImage(with: .jsq_messageBubbleLightGray())
         
-//        let url = NSURL(string: "ws://phoenixchat.herokuapp.com/socket/websocket")!
-        let url = NSURL(string: "ws://localhost:4000/socket/websocket")!
+//        let url = URL(string: "ws://phoenixchat.herokuapp.com/socket/websocket")!
+        let url = URL(string: "ws://localhost:4000/socket/websocket")!
         socket = Socket(url: url)
         channel = Channel(topic: "rooms:lobby")
         
         super.init(nibName: "JSQMessagesViewController",
-            bundle: NSBundle(forClass: JSQMessagesViewController.self))
+            bundle: Bundle(for: JSQMessagesViewController.self))
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -59,7 +59,7 @@ class ChatViewController: JSQMessagesViewController {
         // remove attachments button
         inputToolbar?.contentView?.leftBarButtonItem = nil
         
-        subscription = NSNotificationCenter.defaultCenter().addObserverForName(UIApplicationWillEnterForegroundNotification, object: nil, queue: nil) { [weak self] _ in
+        subscription = NotificationCenter.default.addObserver(forName: NSNotification.Name.UIApplicationWillEnterForeground, object: nil, queue: nil) { [weak self] _ in
             self?.socket.connect()
         }
         
@@ -81,14 +81,14 @@ class ChatViewController: JSQMessagesViewController {
         socket.connect()
     }
     
-    override func didPressSendButton(button: UIButton!, withMessageText text: String!, senderId: String!, senderDisplayName: String!, date: NSDate!) {
-        socket.send(channel, event: "new:msg", payload: ["user": username, "body": text]) { res in
+    override func didPressSend(_ button: UIButton!, withMessageText text: String!, senderId: String!, senderDisplayName: String!, date: Date!) {
+        socket.send(channel, event: "new:msg", payload: ["user": username as AnyObject, "body": text as AnyObject]) { res in
             print("Sent", res)
         }
     }
     
-    private func messageFrom(payload: Message.JSON) -> JSQMessage? {
-        if let user = payload["user"] as? String, body = payload["body"] as? String {
+    fileprivate func messageFrom(_ payload: Message.JSON) -> JSQMessage? {
+        if let user = payload["user"] as? String, let body = payload["body"] as? String {
             return JSQMessage(senderId: user, displayName: user, text: body)
         }
         return nil
@@ -98,27 +98,27 @@ class ChatViewController: JSQMessagesViewController {
 // MARK: JSQMessagesCollectionViewDataSource
 
 extension ChatViewController {
-    override func collectionView(collectionView: JSQMessagesCollectionView!, avatarImageDataForItemAtIndexPath indexPath: NSIndexPath!) -> JSQMessageAvatarImageDataSource! {
+    override func collectionView(_ collectionView: JSQMessagesCollectionView!, avatarImageDataForItemAt indexPath: IndexPath!) -> JSQMessageAvatarImageDataSource! {
         return nil
     }
     
-    override func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
     
-    override func collectionView(collectionView: JSQMessagesCollectionView!, messageDataForItemAtIndexPath indexPath: NSIndexPath!) -> JSQMessageData {
+    override func collectionView(_ collectionView: JSQMessagesCollectionView!, messageDataForItemAt indexPath: IndexPath!) -> JSQMessageData {
         return messages[indexPath.row]
     }
     
-    override func collectionView(collectionView: JSQMessagesCollectionView!, didDeleteMessageAtIndexPath indexPath: NSIndexPath!) {
+    override func collectionView(_ collectionView: JSQMessagesCollectionView!, didDeleteMessageAt indexPath: IndexPath!) {
     }
     
-    override func collectionView(collectionView: JSQMessagesCollectionView!, messageBubbleImageDataForItemAtIndexPath indexPath: NSIndexPath!) -> JSQMessageBubbleImageDataSource {
+    override func collectionView(_ collectionView: JSQMessagesCollectionView!, messageBubbleImageDataForItemAt indexPath: IndexPath!) -> JSQMessageBubbleImageDataSource {
         let message = messages[indexPath.item]
         return message.senderId == senderId ? outgoingBubble : incomingBubble
     }
     
-    override func collectionView(collectionView: JSQMessagesCollectionView!, attributedTextForMessageBubbleTopLabelAtIndexPath indexPath: NSIndexPath!) -> NSAttributedString! {
+    override func collectionView(_ collectionView: JSQMessagesCollectionView!, attributedTextForMessageBubbleTopLabelAt indexPath: IndexPath!) -> NSAttributedString! {
         let message = messages[indexPath.item]
         
         if message.senderId == senderId { return nil }
@@ -131,11 +131,11 @@ extension ChatViewController {
         return NSAttributedString(string: message.senderDisplayName)
     }
     
-    override func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
-        let cell = super.collectionView(collectionView, cellForItemAtIndexPath: indexPath) as! JSQMessagesCollectionViewCell
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = super.collectionView(collectionView, cellForItemAt: indexPath) as! JSQMessagesCollectionViewCell
         
         let message = messages[indexPath.item]
-        let textColor: UIColor = message.senderId == senderId ? .whiteColor() : .blackColor()
+        let textColor: UIColor = message.senderId == senderId ? .white : .black
         cell.textView?.textColor = textColor
         
         return cell
@@ -145,7 +145,7 @@ extension ChatViewController {
 // MARK: JSQMessagesCollectionViewDelegateFlowLayout
 
 extension ChatViewController {
-    override func collectionView(collectionView: JSQMessagesCollectionView!, layout collectionViewLayout: JSQMessagesCollectionViewFlowLayout!, heightForMessageBubbleTopLabelAtIndexPath indexPath: NSIndexPath!) -> CGFloat {
+    override func collectionView(_ collectionView: JSQMessagesCollectionView!, layout collectionViewLayout: JSQMessagesCollectionViewFlowLayout!, heightForMessageBubbleTopLabelAt indexPath: IndexPath!) -> CGFloat {
         let message = messages[indexPath.item]
         
         if message.senderId == senderId { return 0 }
