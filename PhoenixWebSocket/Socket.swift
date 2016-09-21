@@ -12,97 +12,97 @@ import Starscream
 // http://stackoverflow.com/a/24888789/1935440
 // String's stringByAddingPercentEncodingWithAllowedCharacters doesn't encode + sign,
 // which is ofter used in Phoenix tokens.
-private let URLEncodingAllowedChars = NSCharacterSet(charactersInString: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~/?")
+private let URLEncodingAllowedChars = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~/?")
 
-private func encodePair(pair: (String, String)) -> String? {
-    if let key = pair.0.stringByAddingPercentEncodingWithAllowedCharacters(URLEncodingAllowedChars),
-        value = pair.1.stringByAddingPercentEncodingWithAllowedCharacters(URLEncodingAllowedChars)
+private func encodePair(_ pair: (String, String)) -> String? {
+    if let key = pair.0.addingPercentEncoding(withAllowedCharacters: URLEncodingAllowedChars),
+        let value = pair.1.addingPercentEncoding(withAllowedCharacters: URLEncodingAllowedChars)
     { return "\(key)=\(value)" } else { return nil }
 }
 
 
-private func resolveUrl(url: NSURL, params: [String: String]?) -> NSURL {
-    guard let components = NSURLComponents(URL: url, resolvingAgainstBaseURL: false),
-        params = params else { return url }
+private func resolveUrl(_ url: URL, params: [String: String]?) -> URL {
+    guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+        let params = params else { return url }
     
-    let queryString = params.flatMap(encodePair).joinWithSeparator("&")
+    let queryString = params.flatMap(encodePair).joined(separator: "&")
     components.percentEncodedQuery = queryString
-    return components.URL ?? url
+    return components.url ?? url
 }
 
-public enum SendError: ErrorType {
-    case NotConnected
+public enum SendError: Error {
+    case notConnected
     
-    case PayloadSerializationFailed(String)
+    case payloadSerializationFailed(String)
     
-    case ResponseDeserializationFailed(ResponseError)
+    case responseDeserializationFailed(ResponseError)
     
-    case ChannelNotJoined
+    case channelNotJoined
 }
 
 extension SendError: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .NotConnected: return "Socket is not connected to the server."
-        case .PayloadSerializationFailed(let reason):
+        case .notConnected: return "Socket is not connected to the server."
+        case .payloadSerializationFailed(let reason):
             return "Payload serialization failed: \(reason)"
-        case .ResponseDeserializationFailed(let error):
+        case .responseDeserializationFailed(let error):
             return "Response deserialization failed: \(error)"
-        case .ChannelNotJoined: return "Channel not joined."
+        case .channelNotJoined: return "Channel not joined."
         }
     }
 }
 
 public enum MessageResponse {
-    case Success(Response)
+    case success(Response)
     
     /// Note that errors received from server will be in Success case.
     /// This case for client side errors.
-    case Error(SendError)
+    case error(SendError)
 }
 
 public final class Socket {
-    public typealias MessageCallback = MessageResponse -> ()
+    public typealias MessageCallback = (MessageResponse) -> ()
     
-    private static let HearbeatRefPrefix = "heartbeat-"
+    fileprivate static let HearbeatRefPrefix = "heartbeat-"
     
-    private let socket: WebSocket
+    fileprivate let socket: WebSocket
     
-    private var reconnectTimer: NSTimer?
-    private var heartbeatTimer: NSTimer?
+    fileprivate var reconnectTimer: Timer?
+    fileprivate var heartbeatTimer: Timer?
     
     public var enableLogging: Bool = true
     
     public var onConnect: (() -> ())?
-    public var onDisconnect: (NSError? -> ())?
+    public var onDisconnect: ((NSError?) -> ())?
     
     // ref as key, for triggering callback when phx_reply event comes in
-    private var sentMessages = [String: MessageCallback]()
+    fileprivate var sentMessages = [String: MessageCallback]()
     
-    private var channels = Set<Channel>()
+    fileprivate var channels = Set<Channel>()
     
     // data may become stale on this
-    private var connectedChannels = Set<Channel>()
+    fileprivate var connectedChannels = Set<Channel>()
     
     /// **Warning:** Please don't forget to disconnect when you're done to prevent memory leak
-    public init(url: NSURL, params: [String: String]? = nil, selfSignedSSL: Bool = false) {
+    public init(url: URL, params: [String: String]? = nil, disableSSLCertValidation: Bool = false) {
         socket = WebSocket(url: resolveUrl(url, params: params))
-        socket.selfSignedSSL = selfSignedSSL
+        socket.disableSSLCertValidation = disableSSLCertValidation
         socket.delegate = self
     }
     
     /// Connects socket to server, if socket is already connected to server, makes sure 
     /// all timers are in place. This may be usefull to ensure connection when app comes 
     /// from background, since all timers invalidated when app goes background.
-    public func connect(reconnectOnError: Bool = true, reconnectInterval: NSTimeInterval = 5) {
+    public func connect(_ reconnectOnError: Bool = true, reconnectInterval: TimeInterval = 5) {
         // if everything is on place
-        if let heartbeatTimer = heartbeatTimer
-            where socket.isConnected && heartbeatTimer.valid { return }
+        if let heartbeatTimer = heartbeatTimer,
+            socket.isConnected && heartbeatTimer.isValid { return }
         
         if reconnectOnError {
             // let's invalidate old timer if any
             reconnectTimer?.invalidate()
-            reconnectTimer = NSTimer.scheduledTimerWithTimeInterval(reconnectInterval,
+            reconnectTimer = Timer.scheduledTimer(timeInterval: reconnectInterval,
                 target: self, selector: #selector(Socket.retry), userInfo: nil, repeats: true)
         }
         
@@ -111,11 +111,11 @@ public final class Socket {
             sendHeartbeat()
             // setup new timer
             heartbeatTimer?.invalidate()
-            heartbeatTimer = NSTimer.scheduledTimerWithTimeInterval(30,
+            heartbeatTimer = Timer.scheduledTimer(timeInterval: 30,
                 target: self, selector: #selector(Socket.sendHeartbeat), userInfo: nil, repeats: true)
         } else {
             log("Connecting to", socket.currentURL)
-            channels.forEach { $0.status = .Joining }
+            channels.forEach { $0.status = .joining }
             socket.connect()
         }
     }
@@ -123,12 +123,12 @@ public final class Socket {
     @objc func retry() {
         guard !socket.isConnected else { return }
         log("Retrying connect to", socket.currentURL)
-        channels.forEach { $0.status = .Joining }
+        channels.forEach { $0.status = .joining }
         socket.connect()
     }
     
     /// See Starscream.WebSocket.disconnect() for forceTimeout argument's doc
-    public func disconnect(forceTimeout: NSTimeInterval? = nil) {
+    public func disconnect(_ forceTimeout: TimeInterval? = nil) {
         heartbeatTimer?.invalidate()
         reconnectTimer?.invalidate()
         if socket.isConnected {
@@ -137,29 +137,29 @@ public final class Socket {
         }
     }
     
-    public func send(channel: Channel, event: String, payload: Message.JSON = [:], callback: MessageCallback? = nil) {
+    public func send(_ channel: Channel, event: String, payload: Message.JSON = [:], callback: MessageCallback? = nil) {
         guard socket.isConnected else {
-            callback?(.Error(.NotConnected))
+            callback?(.error(.notConnected))
             log("Attempt to send message while not connected:", event, payload)
             return
         }
         guard channels.contains(channel) && channel.status.isJoined() else {
-            callback?(.Error(.ChannelNotJoined))
+            callback?(.error(.channelNotJoined))
             log("Attempt to send message to not joined channel:", channel.topic, event, payload)
             return
         }
         sendMessage(Message(event, topic: channel.topic, payload: payload), callback: callback)
     }
     
-    public func join(channel: Channel) {
+    public func join(_ channel: Channel) {
         channels.insert(channel)
         if socket.isConnected { // check for setting status here.
-            channel.status = .Joining
+            channel.status = .joining
             sendJoinEvent(channel)
         }
     }
     
-    private func sendJoinEvent(channel: Channel) {
+    fileprivate func sendJoinEvent(_ channel: Channel) {
         // if socket isn't connected, we join this channel right after connection
         guard socket.isConnected else { return }
         
@@ -168,24 +168,24 @@ public final class Socket {
         // Use send message to skip channel joined check
         sendMessage(Message(Event.Join, topic: channel.topic, payload: payload)) { [weak self] result in
             switch result {
-            case .Success(let joinResponse):
+            case .success(let joinResponse):
                 switch joinResponse {
-                case .Ok(let response):
+                case .ok(let response):
                     self?.log("Joined channel, payload:", response)
                     self?.connectedChannels.insert(channel)
-                    channel.status = .Joined(response)
-                case let .Error(reason, response):
+                    channel.status = .joined(response)
+                case let .error(reason, response):
                     self?.log("Rejected from channel, payload:", response)
-                    channel.status = .Rejected(reason, response)
+                    channel.status = .rejected(reason, response)
                 }
-            case .Error(let error):
+            case .error(let error):
                 self?.log("Failed to join channel:", error)
-                channel.status = .JoinFailed(error)
+                channel.status = .joinFailed(error)
             }
         }
     }
     
-    public func leave(channel: Channel) {
+    public func leave(_ channel: Channel) {
         // before guard so it won't be rejoined on next connection
         channels.remove(channel)
         
@@ -195,17 +195,17 @@ public final class Socket {
         log("Leaving channel:", channel.topic)
         sendMessage(Message(Event.Leave, topic: channel.topic, payload: [:])) { [weak self] result in
             switch result {
-            case .Success(let response):
+            case .success(let response):
                 self?.log("Left channel, payload:", response)
-                self?.connectedChannels.remove(channel)
-                channel.status = .Disconnected(nil)
-            case .Error(let error): // how is this possible?
+                _ = self?.connectedChannels.remove(channel)
+                channel.status = .disconnected(nil)
+            case .error(let error): // how is this possible?
                 self?.log("Failed to leave channel:", error)
             }
         }
     }
     
-    func sendMessage(message: Message, callback: MessageCallback? = nil) {
+    func sendMessage(_ message: Message, callback: MessageCallback? = nil) {
         do {
             let data = try message.toJson()
             log("Sending", message)
@@ -213,17 +213,17 @@ public final class Socket {
             // 0. if ref is missing, then something is going wrong
             // 1. this func isn't public
             sentMessages[message.ref!] = callback
-            socket.writeData(data)
+            socket.write(data: data)
         } catch let error as NSError {
             log("Failed to send message:", error)
-            callback?(.Error(.PayloadSerializationFailed(error.localizedDescription)))
+            callback?(.error(.payloadSerializationFailed(error.localizedDescription)))
         }
     }
     
     @objc func sendHeartbeat() {
         guard socket.isConnected else { return }
         // so we can skip logging them, less noisy
-        let ref = Socket.HearbeatRefPrefix + NSUUID().UUIDString
+        let ref = Socket.HearbeatRefPrefix + UUID().uuidString
         sendMessage(Message(Event.Heartbeat, topic: "phoenix", payload: [:], ref: ref))
     }
     
@@ -243,7 +243,7 @@ extension Socket: WebSocketDelegate {
         log("Connected to:", socket.currentURL)
         onConnect?()
         heartbeatTimer?.invalidate()
-        heartbeatTimer = NSTimer.scheduledTimerWithTimeInterval(30,
+        heartbeatTimer = Timer.scheduledTimer(timeInterval: 30,
             target: self, selector: #selector(Socket.sendHeartbeat), userInfo: nil, repeats: true)
         // statuses set when we were connecting socket
         channels.forEach(sendJoinEvent)
@@ -256,7 +256,7 @@ extension Socket: WebSocketDelegate {
         heartbeatTimer?.invalidate()
         channels.forEach { channel in
             switch channel.status {
-            case .Joined(_), .Joining: channel.status = .Disconnected(error)
+            case .joined(_), .joining: channel.status = .disconnected(error)
             default: break
             }
         }
@@ -267,19 +267,19 @@ extension Socket: WebSocketDelegate {
     }
     
     public func websocketDidReceiveMessage(socket: Starscream.WebSocket, text: String) {
-        guard let data = text.dataUsingEncoding(NSUTF8StringEncoding), message = Message(data: data)
+        guard let data = text.data(using: String.Encoding.utf8), let message = Message(data: data)
             else { log("Couldn't parse message from text:", text); return }
         
         // don't log if hearbeat reply
-        if let ref = message.ref where ref.hasPrefix(Socket.HearbeatRefPrefix) { }
+        if let ref = message.ref , ref.hasPrefix(Socket.HearbeatRefPrefix) { }
         else { log("Received:", message) }
         
         // Replied message
-        if let ref = message.ref, callback = sentMessages.removeValueForKey(ref) {
+        if let ref = message.ref, let callback = sentMessages.removeValue(forKey: ref) {
             do {
-                callback(.Success(try Response.fromPayload(message.payload)))
+                callback(.success(try Response.fromPayload(message.payload)))
             } catch let error as ResponseError {
-                callback(.Error(.ResponseDeserializationFailed(error)))
+                callback(.error(.responseDeserializationFailed(error)))
             } catch {
                 fatalError("Response.fromPayload throw unknown error")
             }
@@ -288,13 +288,13 @@ extension Socket: WebSocketDelegate {
             .forEach { $0.recieved(message) }
     }
     
-    public func websocketDidReceiveData(socket: Starscream.WebSocket, data: NSData) {
+    public func websocketDidReceiveData(socket: Starscream.WebSocket, data: Data) {
         log("Received data:", data)
     }
 }
 
 extension Socket {
-    private func log(items: Any...) {
+    fileprivate func log(_ items: Any...) {
         if enableLogging { print(items) }
     }
 }

@@ -15,33 +15,33 @@ public class Channel {
         didSet { onStatus?(status) }
     }
     
-    private var onStatus: (Status -> ())?
+    fileprivate var onStatus: ((Status) -> ())?
     
     /// Payload to send when joining channel.
     public var joinPayload: Message.JSON?
     
-    private var bindings = [Binding]()
+    fileprivate var bindings = [Binding]()
     
-    public init(topic: String, onStatusChange: (Status -> ())? = nil) {
+    public init(topic: String, onStatusChange: ((Status) -> ())? = nil) {
         self.topic = topic
         onStatus = onStatusChange
-        status = .Disconnected(nil)
+        status = .disconnected(nil)
     }
     
     /// This will override any previous `onStatusChange` calls
     /// or callback given to initializer.
-    public func onStatusChange(callback: Status -> ()) -> Self {
+    public func onStatusChange(_ callback: @escaping (Status) -> ()) -> Self {
         onStatus = callback
         return self
     }
     
-    public func on(event: String, callback: Message -> ()) -> Self {
+    public func on(_ event: String, callback: @escaping (Message) -> ()) -> Self {
         bindings.append(Binding(event: event, callback: callback))
         return self
     }
     
     // call this when message recieved for this channel
-    func recieved(message: Message) {
+    func recieved(_ message: Message) {
         // just in case, should never happen
         guard message.topic == topic else { return }
         
@@ -51,28 +51,28 @@ public class Channel {
     
     struct Binding {
         let event: String
-        let callback: Message -> ()
+        let callback: (Message) -> ()
     }
     
     public enum Status {
-        case Joining
+        case joining
         
         /// When channel successfully joined, contains server response.
-        case Joined(Message.JSON)
+        case joined(Message.JSON)
         
         /// When joining rejected by server (i.e. server replied with `{:error, response}`),
         /// contains error reason and response dic.
-        case Rejected(String, Message.JSON)
+        case rejected(String, Message.JSON)
         
         /// Joining failed by transport related errors.
-        case JoinFailed(SendError)
+        case joinFailed(SendError)
         
         /// Disconnected from server, contains error if any.
-        case Disconnected(NSError?)
+        case disconnected(NSError?)
         
         func isJoined() -> Bool {
             switch self {
-            case .Joined(_): return true
+            case .joined(_): return true
             default: return false
             }
         }
@@ -81,7 +81,7 @@ public class Channel {
 
 extension Channel: Equatable { }
 
-@warn_unused_result
+
 public func ==(lhs: Channel, rhs: Channel) -> Bool {
     return lhs.topic == rhs.topic
 }

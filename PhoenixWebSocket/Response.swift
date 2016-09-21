@@ -8,43 +8,43 @@
 
 import Foundation
 
-public enum ResponseError: ErrorType {
+public enum ResponseError: Error {
     /// `status` or `response` key is missing.
-    case InvalidFormat
+    case invalidFormat
     
     /// Missing `reason` key on error response.
-    case MissingReason
+    case missingReason
 }
 
 extension ResponseError: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .InvalidFormat: return "Invalid response format."
-        case .MissingReason: return "Error response is missing reason."
+        case .invalidFormat: return "Invalid response format."
+        case .missingReason: return "Error response is missing reason."
         }
     }
 }
 
 public enum Response {
-    case Ok(Message.JSON)
+    case ok(Message.JSON)
     /// Error responses assumed to have `reason` key with `String` value
     ///
     /// Tuple containing of `reason` value and `response` dic
-    case Error(String, Message.JSON)
+    case error(String, Message.JSON)
     
-    public static func fromPayload(payload: Message.JSON) throws -> Response {
-        guard let status = payload["status"] as? String where ["ok", "error"].contains(status),
+    public static func fromPayload(_ payload: Message.JSON) throws -> Response {
+        guard let status = payload["status"] as? String, ["ok", "error"].contains(status),
             let response = payload["response"] as? Message.JSON else {
-                throw ResponseError.InvalidFormat
+                throw ResponseError.invalidFormat
         }
         
-        if status == "ok" { return .Ok(response) }
+        if status == "ok" { return .ok(response) }
         
         // only error statuses pass here
         if let reason = response["reason"] as? String {
-            return .Error(reason, response)
+            return .error(reason, response)
         } else {
-            throw ResponseError.MissingReason
+            throw ResponseError.missingReason
         }
     }
 }
@@ -52,8 +52,8 @@ public enum Response {
 extension Response: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .Ok(let response): return "Response.Ok: \(response)"
-        case .Error(_, let response): return "Response.Error: \(response)"
+        case .ok(let response): return "Response.Ok: \(response)"
+        case .error(_, let response): return "Response.Error: \(response)"
         }
     }
 }
