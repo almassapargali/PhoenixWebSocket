@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = 'PhoenixWebSocket'
-  s.version      = '0.6'
+  s.version      = '0.6.0'
   s.license      = 'MIT'
   s.summary      = 'A websockets framework designed to work with Phoenix Framework'
   s.homepage     = 'https://github.com/almassapargali/PhoenixWebSocket'
