@@ -9,18 +9,18 @@
 import Foundation
 
 public struct Message {
-    public typealias JSON = [String: AnyObject]
+    public typealias JSON = [String: Any]
     
     public let topic: String
 
     public let event: String
-    public let payload: [String: AnyObject]
+    public let payload: JSON
 
     // broadcasted messages doesn't have ref
     let ref: String?
 
     func toJson() throws -> Data {
-        let dic = ["topic": topic, "event": event, "payload": payload, "ref": ref ?? ""] as [String : Any]
+        let dic = ["topic": topic, "event": event, "payload": payload, "ref": ref ?? ""] as JSON
         return try JSONSerialization.data(withJSONObject: dic, options: JSONSerialization.WritingOptions())
     }
     
